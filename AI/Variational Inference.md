@@ -37,10 +37,10 @@ $p(z) = \mathcal N(z;0, 1)$, i.e., the unit Gaussian.
 
   $\mathbb E_{q(Z|X)} [\log p(X|Z) -\log q(Z|X) + \log q(Z|X) - \log p(Z) - \log p(Z|X)]$
 
-  $=\text{DL}[q(Z|X)\Vert p(Z|X)] - \text{DL}[q(Z|X)\Vert p(Z)] + \mathbb E_{q(Z|X)} \log p(X|Z)$
+  $=\text{KL}[q(Z|X)\Vert p(Z|X)] - \text{KL}[q(Z|X)\Vert p(Z)] + \mathbb E_{q(Z|X)} \log p(X|Z)$
 
 * One important observation is that, the first term $\text{DL}[q(Z|X)\Vert p(Z|X)]$ is always non-negative hence the above equation is a **lower bound**.
-*  Thus, we just have to optimize $\mathbb E_{q(Z|X)} \text{DL}[q(Z|X)\Vert p(Z)] + \mathbb E_{q(Z|X)} \log p(X|Z)$
+*  Thus, we just have to optimize $\mathbb E_{q(Z|X)} \text{KL}[q(Z|X)\Vert p(Z)] + \mathbb E_{q(Z|X)} \log p(X|Z)$
 
 Notice that $q(Z|X)$ is Gaussian parameterized by a neural network, and $p(Z) = \mathcal N(Z;0, 1)$, the first term is differentiable. Also, $p(X|Z)$ is also NN-parameterized Gaussian, hence is also differentiable.
 
@@ -121,13 +121,84 @@ Original paper:
 
 # Denoising Diffusion Probabilistic Models
 
+[Denoising Diffusion Probabilistic Models   NeurIPS 2020](https://arxiv.org/pdf/2006.11239.pdf)
+
 ## Purpose
 
-* The denoising process: $x_T \to \cdots \to x_2 \to x_1$, where $p(x_t|x_{t + 1}) = \mathcal N(x_{t}|\sqrt{1-\beta_t}x_{t+1}, \beta_t I)$, i.e., adding Gaussian noise during each step (and scaling to maintain the variance) 
+* The denoising process: $x_T \to \cdots \to x_1 \to x_0$, where $p_\theta(x_t|x_{t + 1}) = \mathcal N(x_{t-1};  \mu_\theta(x_{t}, t), \Sigma_\theta(x_t, t))$
 
   Since we want to generate image from noise, it is natural to think the denoising process first.
 
-* The reverse (noise-adding) process: $x_1 \to x_2 \to \cdots \to x_T)$, where $p(x_{t+1}|x_t)$ is approximated by a linear network $\mathcal N(x_t|\mu_\theta(x_t, t), \Sigma_\theta(x_t, t))$
+* The reverse (noise-adding) process: $x_0 \to x_1 \to \cdots \to x_T$, where $q(x_{t+1}|x_t)$ is approximated by a linear network $\mathcal N(x_t|\sqrt{1-\beta_t} x_{t-1}, \beta_t x_t)$
 
 ### Approximation
 
+**Probability modelling**
+
+$p_\theta(x_0, \cdots, x_T) = p(x_T) \prod_{t=1}^T p_\theta(x_{t-1}|x_t)$  the denoising process
+
+$q(x_1, \cdots, x_T|x_0) = \prod_{t=1}^T q(x_t|x_{t-1})$ the reverse (noise-adding) process
+
+Combine those, we have:
+
+$p(x_0) = \dfrac{p(x_0,\cdots, x_T)}{p(x_1,...,x_T|x_0)}$, then $\log p(x_0) = \log p(x_{0:T}) - \log p(x_{1:T}|x_0)$
+
+Consider $\mathbb E_{q} \log q(x_{1:T}|x_0) - \log p(x_{1:T}|x_0)$ (where $\mathbb E_q$ means $x_1, x_2, ..., x_T |x_0 \sim q(x_1|x_0)q(x_2|x_1)\cdots q(x_T|x_{T-1})$)
+
+Is the KL-divergence and is always positive, we cam have a upper bound of $p(x_0)$:
+
+$\log p(x_0) \le \mathbb E_q (\log p(x_{0:T}) - \log q(x_{1:T}|x_0))$
+
+Thus, it is trainable since $p(x_{0:T})$ can be computed by **neural networks** and $q$ is **closed form**.
+
+**Choice of $\beta$**
+
+The parameter for the denoising process $\beta_t$ can be either fixed and also trainable
+
+**Noise-adding process fast sampling**
+
+As $q(x_t|x_{t-1})$ is simply mixing Gaussian noise into $x_{t-1}$, we have
+
+$q(x_t|x_0) = \mathcal N\left(x_t; \prod_{s=1}^t \sqrt{1-\beta_t} x_0, [1-\prod_{s=1}^t (1-\beta_t)] I)\right)$
+
+$=\mathcal N\left(x_t; \sqrt{\bar\alpha_t}x_0, (1-\bar \alpha_t)I\right)$
+
+**Further optimize the loss function**
+
+Using $\mathbb E_q (\log p(x_{0:T}) - \log q(x_{1:T}|x_0))$ requires high-variance Monte-Carlo sampling, hence rewrite it as:
+
+$\mathbb E_q\left( -[\log q(x_T|x_0) + \log q(x_{T-1} |x_T, x_0)  + \log q(x_{T-2}|x_{T-1}, x_T, x_0) + \cdots] + \log p(x_{0:T})\right)$
+
+Notice that $q(x_{T-2}|x_{T-1},x_T,x_0) = q(x_{T-2}|x_{T-1}, x_0)$ since $x_T$ solely depends on $x_T$, the loss can further be converted to
+
+$\mathbb E_q \left[ D_\text{KL} (q(x_T|x_0) \Vert p(x_T)) + \sum_{t=2}^T D_\text{KL}(q(x_{t-1}|x_t, x_0)\Vert p(x_{t-1}|x_t)) + \log p_\theta(x_0|x_1) \right]$
+
+Here
+
+* $L_T \equiv D_\text{KL} (q(x_T|x_0) \Vert p(x_T)) $
+* $L_{t-1} \equiv D_\text{KL}(q(x_{t-1}|x_t, x_0)\Vert p(x_{t-1}|x_t))$
+* $L_0 \equiv \log p_\theta(x_0|x_1)$
+
+**Notice** that $q(x_{t-1}|x_t, x_0)$ is also a Gaussian distribution and has a closed form! We omit the detailed representation here.
+
+See the original paper Sec. 2 end.
+
+## Training
+
+* $L_T$ contains no learnable parameters
+
+* $L_{t-1}$: First, consider $\Sigma_\theta(x_t, t) = \sigma_t^2I$ as constant. ($\sigma_t^2=\beta_t$ or $\sigma_t^2 = \dfrac{1-\bar \alpha_{t-1}}{1-\bar \alpha_t}\beta$ are both OK)
+
+  * $x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1-\bar \alpha_t)}\epsilon$ where $\epsilon  \sim \mathcal N(0, I)$ 
+  * $L_{t-1} = \mathbb E_q \left[ \dfrac{1}{2\sigma_t^2}\Vert \mathbb Ex_{t-1} - \mu_\theta(x_t, t) \Vert^2\right]$ Remember that $q(x_{t-1}|x_t, x_0)$ is also Gaussian, and use the closed form formula, we can further have $\mathbb Ex_{t-1} =\dfrac{1}{\sqrt{\bar \alpha_t}}\tilde \mu(x_t, x_0)=  \dfrac{1}{\sqrt{\bar\alpha_t}}\left(x_t - \dfrac{\beta_t}{\sqrt{1-\bar \alpha_t}}\epsilon\right)$ (*Note here we also use $x_t$ and a random Gaussian $\epsilon$* to represent $x_0$)
+  * Thus, the problem becomes use $\mu_\theta(x_t, t)$ to predict $\dfrac{1}{\sqrt{\bar\alpha_t}}\left(x_t - \dfrac{\beta_t}{\sqrt{1-\bar \alpha_t}}\epsilon\right)$
+  * Then to learn $\mu_\theta(x_t, t)$ is to learn $\epsilon_\theta(x_t, t)$ to predict $\epsilon \sim \mathcal N(0, 1)$
+
+* Simplified Loss:
+
+  $L(\theta) = \mathbb E_{t,x_0,\epsilon}\left[ \Vert \epsilon - \epsilon_\theta(\sqrt{\bar \alpha }x_0 + \sqrt{1-\bar \alpha_t}\epsilon, t) \Vert^2 \right]$
+
+## Inference
+
+1. Sample $X_T \sim \mathcal N(0, 1)$
+2. Iteratively: $x_{t-1} = \dfrac{1}{\sqrt{\bar \alpha_t}}\left(x_t - \dfrac{\beta_t}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta(x_t, t) \right) + \sigma_t \mathcal N(0, 1)$
