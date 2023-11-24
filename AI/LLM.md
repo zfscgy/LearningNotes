@@ -140,9 +140,7 @@ Total $\approx 101M$ [Different from 110M in the original paper?]
 
 Bi-direcitonal: uses both left and right context
 
-## Opensource code
-
-### Huggingface implementation
+## Huggingface implementation
 
 [modeling_bert.py - huggingface/transformers - GitHub](https://github.com/huggingface/transformers/blob/main/src/transformers/models/bert/modeling_bert.py)
 
@@ -277,7 +275,17 @@ Here, `[gmask]` means the start of generation? `<sop>` means the sentence start.
 
 
 
+## Transformer Variation
 
+### Local Self-Attention
+
+When computing attention, only consider the nearby tokens, like CNNs.
+
+See: [Image Transformer  ICML 2018](http://proceedings.mlr.press/v80/parmar18a/parmar18a.pdf)  
+
+(Using transformer with local attention to generate image pixel by pixel. Similar to PixelRNN/Pixel CNN)
+
+See also: [Pixel Recurrent Neural Networks   ICML 2016](http://proceedings.mlr.press/v48/oord16.pdf)
 
 # Optimization
 

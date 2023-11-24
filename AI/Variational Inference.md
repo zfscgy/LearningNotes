@@ -129,7 +129,7 @@ Original paper:
 
   Since we want to generate image from noise, it is natural to think the denoising process first.
 
-* The reverse (noise-adding) process: $x_0 \to x_1 \to \cdots \to x_T$, where $q(x_{t+1}|x_t)$ is approximated by a linear network $\mathcal N(x_t|\sqrt{1-\beta_t} x_{t-1}, \beta_t x_t)$
+* The reverse (noise-adding) process: $x_0 \to x_1 \to \cdots \to x_T$, where $q(x_{t+1}|x_t)$ is approximated by a linear network $\mathcal N(x_t|\sqrt{1-\beta_t} x_{t-1}, \beta_tI)$
 
 ### Approximation
 
@@ -189,7 +189,7 @@ See the original paper Sec. 2 end.
 
 * $L_{t-1}$: First, consider $\Sigma_\theta(x_t, t) = \sigma_t^2I$ as constant. ($\sigma_t^2=\beta_t$ or $\sigma_t^2 = \dfrac{1-\bar \alpha_{t-1}}{1-\bar \alpha_t}\beta$ are both OK)
 
-  * $x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1-\bar \alpha_t)}\epsilon$ where $\epsilon  \sim \mathcal N(0, I)$ 
+  * $x_t = \sqrt{\bar\alpha_t} x_0 + \sqrt{1-\bar \alpha_t}\epsilon$ where $\epsilon  \sim \mathcal N(0, I)$ 
   * $L_{t-1} = \mathbb E_q \left[ \dfrac{1}{2\sigma_t^2}\Vert \mathbb Ex_{t-1} - \mu_\theta(x_t, t) \Vert^2\right]$ Remember that $q(x_{t-1}|x_t, x_0)$ is also Gaussian, and use the closed form formula, we can further have $\mathbb Ex_{t-1} =\dfrac{1}{\sqrt{\bar \alpha_t}}\tilde \mu(x_t, x_0)=  \dfrac{1}{\sqrt{\bar\alpha_t}}\left(x_t - \dfrac{\beta_t}{\sqrt{1-\bar \alpha_t}}\epsilon\right)$ (*Note here we also use $x_t$ and a random Gaussian $\epsilon$* to represent $x_0$)
   * Thus, the problem becomes use $\mu_\theta(x_t, t)$ to predict $\dfrac{1}{\sqrt{\bar\alpha_t}}\left(x_t - \dfrac{\beta_t}{\sqrt{1-\bar \alpha_t}}\epsilon\right)$
   * Then to learn $\mu_\theta(x_t, t)$ is to learn $\epsilon_\theta(x_t, t)$ to predict $\epsilon \sim \mathcal N(0, 1)$
@@ -202,3 +202,6 @@ See the original paper Sec. 2 end.
 
 1. Sample $X_T \sim \mathcal N(0, 1)$
 2. Iteratively: $x_{t-1} = \dfrac{1}{\sqrt{\bar \alpha_t}}\left(x_t - \dfrac{\beta_t}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta(x_t, t) \right) + \sigma_t \mathcal N(0, 1)$
+
+**Langevin Dynamics**: In the inference, when computing $x_{t-1}$, a noise term is added, which resembles Langevin Dynamics.
+
