@@ -131,7 +131,14 @@ Original paper:
 
 * The reverse (noise-adding) process: $x_0 \to x_1 \to \cdots \to x_T$, where $q(x_{t+1}|x_t)$ is approximated by a linear network $\mathcal N(x_t|\sqrt{1-\beta_t} x_{t-1}, \beta_tI)$
 
-### Approximation
+**Notations**:
+
+* $\beta_t$: scale of noise added in step $t$
+
+* $\alpha_t = 1 - \beta_t$: the degree of shrinkage of $x_{t-1}$ in step $t$ (since we have to make sure $\mathbb \Vert x_t\Vert$ is constant)
+* $\bar \alpha_t = \prod \alpha_t$: the portion of $x_0$ in time step $t$. In every step we only keep $\alpha_t$ portion of the previous $x$, hence the portion of $x_0$ is decreasing exponentially.
+
+## Approximation
 
 **Probability modelling**
 
@@ -162,6 +169,8 @@ As $q(x_t|x_{t-1})$ is simply mixing Gaussian noise into $x_{t-1}$, we have
 $q(x_t|x_0) = \mathcal N\left(x_t; \prod_{s=1}^t \sqrt{1-\beta_t} x_0, [1-\prod_{s=1}^t (1-\beta_t)] I)\right)$
 
 $=\mathcal N\left(x_t; \sqrt{\bar\alpha_t}x_0, (1-\bar \alpha_t)I\right)$
+
+* Notations: $\alpha = 1 - \beta$, $\bar \alpha_t = \prod \alpha_t$
 
 **Further optimize the loss function**
 
@@ -197,11 +206,37 @@ See the original paper Sec. 2 end.
 * Simplified Loss:
 
   $L(\theta) = \mathbb E_{t,x_0,\epsilon}\left[ \Vert \epsilon - \epsilon_\theta(\sqrt{\bar \alpha }x_0 + \sqrt{1-\bar \alpha_t}\epsilon, t) \Vert^2 \right]$
+  
+  
+
+### Backbone Model to approximate nosie
+
+[U-Net: Convolutional Networks for Biomedical Image Segmentation  MICCAO2015](https://arxiv.org/abs/1505.04597)
+
+* Downsample layers + Upsample layers made of Convolutional and Residual layers, and residual connection between the downsampling and upsampling feature maps.
+* Some modifications, including attentions are added.
+
+> In practice, model architecture is important to the performance of DDPM. I found that, even for the simplest MNIST dataset, if just use DNN or some simple Conv networks leads to very bad performance, i.e., only generate noise picture. However, use U-net-like networks, including residual layers, will have a better performance.
 
 ## Inference
 
 1. Sample $X_T \sim \mathcal N(0, 1)$
-2. Iteratively: $x_{t-1} = \dfrac{1}{\sqrt{\bar \alpha_t}}\left(x_t - \dfrac{\beta_t}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta(x_t, t) \right) + \sigma_t \mathcal N(0, 1)$
+
+2. Iteratively: $x_{t-1} = \dfrac{1}{\sqrt{\alpha_t}}\left(x_t - \dfrac{\beta_t}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta(x_t, t) \right) + \sigma_t \mathcal N(0, 1)$
+
+   The first term is to compute $x_{t-1}$ using $q(x_{t-1}|x_0, x_t)$, and the second term is a random noise.
+
+   $\sigma_t$ is determined by the scale:
+
+   To maintain $\mathbb E \Vert x_{t-1} \Vert^2 = 1$, notice that:
+
+   $x_t = \sqrt{\bar \alpha_t} x_0 + \sqrt{1-\bar\alpha_t}\epsilon$, then if we assume $\epsilon_\theta(x_t, t) = \epsilon$, $\Vert\epsilon\Vert^2$, and $\Vert x_0 \Vert = 1$, we have:
+
+   $\mathbb \Vert x_{t-1}\Vert^ 2= \dfrac{1}{\alpha_t}\Vert x_0 \Vert^2 + \dfrac{1}{\alpha_t}(1-\bar\alpha_t + \dfrac{1-\alpha_t}{1-\bar\alpha_t})\Vert \epsilon \Vert^2 + \sigma^2$,
+
+   $1 = \dfrac1\alpha_t (2 - \bar\alpha_t + \dfrac{1-\alpha_t}{1-\bar\alpha_t}) + \sigma^2$
+
+   Solve this, we can get $\sigma^2 = \beta_t\dfrac{1-\bar\alpha_{t-1}}{1-\bar\alpha_t}$ (notice the fact that $\alpha_t \bar \alpha_{t-1} = \bar\alpha_t$)
 
 **Langevin Dynamics**: In the inference, when computing $x_{t-1}$, a noise term is added, which resembles Langevin Dynamics.
 
