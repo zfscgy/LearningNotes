@@ -253,6 +253,15 @@ Here, `[gmask]` means the start of generation? `<sop>` means the sentence start.
 
 * Reinforcement learning guide: [Hugging Face Deep RL Course](https://huggingface.co/learn/deep-rl-course/unit1/introduction)
 
+[InstructGPT   OpenAI 2022](https://arxiv.org/pdf/2212.10560.pdf)
+
+RLHF contains 3 steps:
+
+1. Supervised Fine-tuning: The labeler (human) create prompt and desired responses ($\{x, y\}$) . The LLM fine-tunes on the set $(x, y)$.
+2. Given a prompt $x$, sample the LLM's outputs $y_1, y_2, \cdots$. 
+
+
+
 
 
 # Related Technologies

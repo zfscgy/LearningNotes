@@ -97,3 +97,28 @@ it is more efficient by Y2B $\to$ B2A
 
 Notice: although for every bit an OT is required, they can **be conducted at the same time**.
 
+### Triple generation
+
+* HE-based: 
+
+  * Paillier
+
+    
+
+  * DGK: an additive HE, $\text{Enc}_{pk}(m;r) = g^mh^r \bmod n$. Using a table to store all encryptions? 
+
+    See [Sci-Hub | Homomorphic encryption and secure comparison. International Journal of Applied Cryptography, 1(1), 22 | 10.1504/ijact.2008.017048](https://sci-hub.se/10.1504/ijact.2008.017048)
+
+    > This cryptosystem seems not popular compared with Paillier, and the plaintext space is small?
+
+* OT-based. Like B2A computation.
+
+# Mixed Protocol for PPML
+
+## SecureNN
+
+3-Party: $P_0, P_1$ and $P_2$.
+
+### Multiplication
+
+The value is additively shared between $P_0$ and $P_1$, and $P_2$ provides the Beaver triple.

@@ -11,9 +11,20 @@ The intermediate $H$ and $\partial \text{Loss} / \partial H$ is exchanged during
 
 ## Fundamental
 
-### [Vepakomma: arxiv 2018] Split learning for health
+### Split Learning
 
-[Split learning for health: Distributed deep learning without sharing raw patient data (arxiv.org)](https://arxiv.org/abs/1812.00564)
+* [Split learning for health: Distributed deep learning without sharing raw patient data  ARXIV 2018](https://arxiv.org/abs/1812.00564)
+* [Split Learning for collaborative deep learning in healthcare  ARXIV 2019](https://arxiv.org/abs/1912.12115)
+
+Those two papers by *Vepakomma* First propose the concept of split learning
+
+## Applications
+
+* mmWave  Power Prediction
+
+  [Communication-Efficient Multimodal Split Learning for mmWave Received Power Prediction  IEEE Comm. Letters 2020](https://ieeexplore.ieee.org/abstract/document/9026781)
+
+  
 
 
 
@@ -31,6 +42,12 @@ The intermediate $H$ and $\partial \text{Loss} / \partial H$ is exchanged during
 ## Papers
 
 ### Feature leak
+
+#### [Asia CCS 2020]Split + CNN
+
+[Can We Use Split Learning on 1D CNN Models for Privacy Preserving Training?  Asia CCS 2020](https://dl.acm.org/doi/abs/10.1145/3320269.3384740?)  
+
+Simply extract the intermediate conv layer outputs, which is highly correlated with the original image
 
 #### [Vepakomma: ICDMW 2020] Nopeek
 
@@ -242,6 +259,16 @@ $L_k = L_g(g_\text{leaked}, g) + L_t(X_\text{leaked}, Y_\text{leaked})$
 
 It is discovered that the output of the attacker's trained bottom model in Split Learning appears to be clustered with same label.
 In clustering based label inference attack, the attacker performs dimensionality reduction and clustering on the output of the trained bottom model, and establishes a correspondence between the obtained clusters and their labels, thus implementing label inference attacks.
+
+#### Does Label DP prevent Label Inference Attacks?
+
+[Does Label Differential Privacy Prevent Label Inference Attacks?   AISTATS 2023](https://arxiv.org/pdf/2202.12968.pdf)
+
+
+
+
+
+
 
 ### Feature + Label leak
 
